@@ -163,7 +163,7 @@ function sys_substr_utf8($str, $start, $length = null, $showEllipsis = false) {
  * @param  array $arr 待编码的信息
  * @return
  */
-function sys_json_encode1($arr) {
+function sys_json_encode($arr) {
     if (PHP_VERSION >= 5.4) {
         return json_encode($arr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     } else {
@@ -183,7 +183,7 @@ function sys_json_encode1($arr) {
  */
 function sys_out_json($arr, $zhNo = false) {
     if ($zhNo) {
-        echo sys_json_encode1($arr);
+        echo sys_json_encode($arr);
     } else {
         echo json_encode($arr);
     }
