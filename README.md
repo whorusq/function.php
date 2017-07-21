@@ -1,9 +1,7 @@
 # function.php
 
 > 常用 PHP 工具函数整理
- 
-### Todo list:
-***
+
 - [x] sys_dump() 调试输出
 - [x] sys_write_file() 向文件写入内容，通过 lock 防止多个进程同时操作
 - [x] sys_download_file() 文件直接下载，支持本地和远程
