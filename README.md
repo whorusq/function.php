@@ -7,9 +7,9 @@
 - [x] sys_download_file() 文件直接下载，支持本地和远程
 - [x] sys_mkdir() 创建多级目录
 - [x] sys_substr_utf8() 字符串截取
-- [ ] sys_client_ip() 获取客户端真实 IP
-- [ ] sys_ip_location() 获取 IP 具体位置
-- [ ] sys_curl() 通用的 curl 封装
+- [x] sys_client_ip() 获取客户端真实 IP
+- [x] sys_ip_location() 获取 IP 具体位置
+- [x] sys_curl() 通用的 curl 封装
 - [x] sys_random_pwd() 生成随机字符串
 - [ ] sys_num2rmb() 数值转人民币
 - [ ] sys_verify_idcard() 验证身份证号，获取身份证信息

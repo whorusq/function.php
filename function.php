@@ -2,8 +2,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * 常用函数库
- * @author: whoru.S.Q <whoru.sun@gmail.com>
- * @date: 2017-01-05 09:15:43
+ * @author: whoru.S.Q <whorusq@gmail.com>
+ * @create: 2017-01-05 09:15:43
  */
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -14,7 +14,8 @@
  * @param  boolean $zh    当类型是 json 时，是否不编码中文
  * @return
  */
-function sys_dump($param, $type = null, $zh = false) {
+function sys_dump($param, $type = null, $zh = false)
+{
     if ($type) {
         if ($type == 'array') { // 数组原样输出
             echo '<pre>';
@@ -34,7 +35,8 @@ function sys_dump($param, $type = null, $zh = false) {
  * @param  string $contents 要写入的内容
  * @return 写入结果 true|false
  */
-function sys_write_file($file, $contents) {
+function sys_write_file($file, $contents)
+{
     if (file_exists($file) && $contents != '') {
         $fp = fopen($file, 'w+');
         if (flock($fp, LOCK_EX)) {
@@ -63,7 +65,8 @@ function sys_write_file($file, $contents) {
  * @param  string  $proxy    代理，适用于需要使用代理才能访问外网资源的情况
  * @return 下载结果 true|false
  */
-function sys_download_file($path, $name = null, $isRemote = false, $proxy = '') {
+function sys_download_file($path, $name = null, $isRemote = false, $proxy = '')
+{
 
     $fileRelativePath = $path;
     $savedFileName = $name;
@@ -122,7 +125,8 @@ function sys_download_file($path, $name = null, $isRemote = false, $proxy = '') 
  * @param  integer $mod  目录权限（windows忽略）
  * @return  创建结果 true|false
  */
-function sys_mkdir($path, $mod = 0777) {
+function sys_mkdir($path, $mod = 0777)
+{
     if (!is_dir($path)) {
         return (mkdir($path, $mod, true)) ? true : false;
     } else {
@@ -139,7 +143,8 @@ function sys_mkdir($path, $mod = 0777) {
  * @param  boolean $showEllipsis 是否显示省略号
  * @return 截取后的最终字符串
  */
-function sys_substr_utf8($str, $start, $length = null, $showEllipsis = false) {
+function sys_substr_utf8($str, $start, $length = null, $showEllipsis = false)
+{
     $length = ($length) ? $length : 99999;
     $strFullLength = 0; // 字符串完整长度
     $finalStr = '';
@@ -163,7 +168,8 @@ function sys_substr_utf8($str, $start, $length = null, $showEllipsis = false) {
  * @param  array $arr 待编码的信息
  * @return
  */
-function sys_json_encode($arr) {
+function sys_json_encode($arr)
+{
     if (PHP_VERSION >= 5.4) {
         return json_encode($arr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     } else {
@@ -181,7 +187,8 @@ function sys_json_encode($arr) {
  * @param  boolean $zhNo 是否编码中文
  * @return
  */
-function sys_out_json($arr, $zhNo = false) {
+function sys_out_json($arr, $zhNo = false)
+{
     if ($zhNo) {
         echo sys_json_encode($arr);
     } else {
@@ -194,7 +201,8 @@ function sys_out_json($arr, $zhNo = false) {
  * 生成唯一 ID（简易版）
  * @return
  */
-function sys_uuid($type = null) {
+function sys_uuid($type = null)
+{
     $uuid = md5(uniqid(rand(), true));
     if ($type && $type == 1) { // 格式：XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
         $str = strtoupper($uuid);
@@ -207,19 +215,123 @@ function sys_uuid($type = null) {
     return $uuid;
 }
 
-// 获取客户端 IP 地址
-function sys_client_ip() {
-
+/**
+ * 获取客户端 IP 地址
+ * @return
+ */
+function sys_client_ip()
+{
+    $ipAddress = '';
+    if (getenv('HTTP_CLIENT_IP')) {
+        $ipAddress = getenv('HTTP_CLIENT_IP');
+    } else if(getenv('HTTP_X_FORWARDED_FOR')) {
+        $ipAddress = getenv('HTTP_X_FORWARDED_FOR');
+    } else if(getenv('HTTP_X_FORWARDED')) {
+        $ipAddress = getenv('HTTP_X_FORWARDED');
+    } else if(getenv('HTTP_FORWARDED_FOR')) {
+        $ipAddress = getenv('HTTP_FORWARDED_FOR');
+    } else if(getenv('HTTP_FORWARDED')) {
+       $ipAddress = getenv('HTTP_FORWARDED');
+    } else if(getenv('REMOTE_ADDR')) {
+        $ipAddress = getenv('REMOTE_ADDR');
+    } else {
+        $ipAddress = 'unknown';
+    }
+    return $ipAddress;
 }
 
-// 获取 IP 具体位置
-function sys_ip_location($ip) {
+/**
+ * 获取 IP 的位置信息：国家、地区、isp
+ * @param  string $ip 待查询的 ip 地址
+ * @return
+ */
+function sys_ip_location($ip)
+{
+    $clientIpInfo = [];
 
+    // 淘宝接口
+    $apiTaobao = 'http://ip.taobao.com//service/getIpInfo.php?ip=';
+    $result1 = json_decode(sys_curl($apiTaobao . $ip), true);
+    if ($result1['data'] && !is_string($result1['data'])) {
+        $clientIpInfo = [
+            'country' => $result1['data']['country'],
+            'location' => $result1['data']['region'] . $result1['data']['city'],
+            'isp' => $result1['data']['isp'],
+            'ip' => $result1['data']['ip']
+        ];
+    }
+
+    // 新浪接口
+    if (!$clientIpInfo) {
+        $apiSina = 'http://int.dpool.sina.com.cn/iplookup/iplookup.php?format=js&ip=';
+        $result2 = sys_curl($apiSina . $ip);
+        $arr = explode('=', $result2);
+        $result2 = json_decode(rtrim($arr[1], ';'), true);
+        if ($result2['ret'] == 1) {
+            $clientIpInfo = [
+                'country' => $result2['country'],
+                'location' => $result2['province'] . $result2['city'],
+                'isp' => $result2['isp'],
+                // 'ip' => $result2['ip']
+            ];
+        }
+    }
+
+    return $clientIpInfo ?: ['ip' => $ip, 'message' => 'unknown'];
 }
 
-// curl 请求接口
-function sys_curl($url, $data = null, $method = 'POST') {
+/**
+ * 通用 curl 请求函数
+ *
+ * @param  string $url     待请求的接口地址
+ * @param  array  $params  请求参数
+ *   - method 请求方式，默认 POST
+ *   - data 请求接口时候，一同提交的参数
+ *   - options 其它 curl 可选参数
+ *
+ * @uses
+ *
+    $params['method'] = 'GET';
+    $params['options'] = [
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/x-www-form-urlencoded;charset=utf-8',
+        ]
+    ];
+    $result = sys_curl($url, $params);
+ *
+ *
+ * @return
+ */
+function sys_curl($url, $params = [])
+{
+    // 默认配置参数
+    $postData = $params['data'] ?: [];
+    $options = $params['options'] ?: [];
+    $config = array(
+        CURLOPT_HEADER => 0,
+        CURLOPT_URL => $url, // 请求地址
+        CURLOPT_FRESH_CONNECT => 1,
+        CURLOPT_RETURNTRANSFER => 1,
+        CURLOPT_FORBID_REUSE => 1,
+        CURLOPT_TIMEOUT => 10, // 请求超时时间
+        CURLOPT_POST => 1, // 默认 POST 请求
+        CURLOPT_POSTFIELDS => http_build_query($postData) // 请求参数
+    );
 
+    //
+    if (strtoupper($params['method']) == 'GET') {
+        unset($config[CURLOPT_POST]);
+        unset($config[CURLOPT_POSTFIELDS]);
+    }
+
+    // 执行请求，返回结果
+    $ch = curl_init();
+    curl_setopt_array($ch, $config + $options);
+    if (! $result = curl_exec($ch)) {
+        @trigger_error(curl_error($ch));
+    }
+    curl_close($ch);
+    return $result;
 }
 
 /**
@@ -228,7 +340,8 @@ function sys_curl($url, $data = null, $method = 'POST') {
  * @param  string $filename 指定的 csv 文件名
  * @return
  */
-function sys_export_csv($rows, $filename = null) {
+function sys_export_csv($rows, $filename = null)
+{
    if ((!empty($rows))) {
 
       $name = ($filename) ? $filename . ".csv" : "export.csv";
@@ -253,7 +366,8 @@ function sys_export_csv($rows, $filename = null) {
  * @param  integer $type   密码类型：0 默认，字母+数字；1 字母+数字+特殊符号
  * @return
  */
-function sys_random_pwd($length = 8, $type = 0) {
+function sys_random_pwd($length = 8, $type = 0)
+{
     $number = range('0', '9');
     $words = array();
     foreach (range('A', 'Z') as $v) {
@@ -279,7 +393,8 @@ function sys_random_pwd($length = 8, $type = 0) {
  * @param  integer $expiry  密文有效期，时间戳，单位：秒
  * @return
  */
-function sys_encrypt($str, $key = '', $expiry = 0) {
+function sys_encrypt($str, $key = '', $expiry = 0)
+{
     return dz_authcode($str, 'ENCODE', $key, $expiry);
 }
 
@@ -288,7 +403,8 @@ function sys_encrypt($str, $key = '', $expiry = 0) {
  * @param  string $str 密文串儿
  * @return
  */
-function sys_decrypt($str) {
+function sys_decrypt($str)
+{
     return dz_authcode($str, 'DECODE');
 }
 
@@ -300,7 +416,8 @@ function sys_decrypt($str) {
  * @param  integer $expiry    密文有效期，时间戳，单位：秒
  * @return 密文或明文
  */
-function dz_authcode($string, $operation = 'DECODE', $key = '', $expiry = 0) {
+function dz_authcode($string, $operation = 'DECODE', $key = '', $expiry = 0)
+{
 
     $ckey_length = 4; // 动态密匙长度，相同的明文会生成不同密文就是依靠动态密匙
     // $key = md5($key ? $key : C('AUTH_CODE_KEY')); // 密匙
