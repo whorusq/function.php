@@ -129,8 +129,6 @@ function sys_mkdir($path, $mod = 0777)
 {
     if (!is_dir($path)) {
         return (mkdir($path, $mod, true)) ? true : false;
-    } else {
-        echo 'An existing directory: ' . $path;
     }
     return false;
 }
@@ -138,24 +136,23 @@ function sys_mkdir($path, $mod = 0777)
 /**
  * 基于 UTF-8 的字符串截取
  * @param  string  $str          待截取的字符串
- * @param  integer  $start        开始下标
  * @param  integer  $length       截取长度
  * @param  boolean $showEllipsis 是否显示省略号
  * @return 截取后的最终字符串
  */
-function sys_substr_utf8($str, $start, $length = null, $showEllipsis = false)
+function sys_substr_utf8($str, $length = null, $showEllipsis = false)
 {
     $length = ($length) ? $length : 99999;
     $strFullLength = 0; // 字符串完整长度
     $finalStr = '';
     if (function_exists('mb_substr') && function_exists('mb_strlen')) {
         $strFullLength = mb_strlen($str, 'utf8');
-        $finalStr = mb_substr($str, $start, min($length, $strFullLength), 'utf8');
+        $finalStr = mb_substr($str, 0, min($length, $strFullLength), 'utf8');
     } else {
         // header('Content-Type:text/html;charset=utf8');
         $arr = preg_split('//u', $str, -1, PREG_SPLIT_NO_EMPTY);
         $strFullLength = count($arr);
-        $finalStr = join('', array_slice($arr, $start, min($length, $strFullLength)));
+        $finalStr = join('', array_slice($arr, 0, min($length, $strFullLength)));
     }
     if ($showEllipsis && $length < $strFullLength) {
         $finalStr .= '...';
