@@ -25,8 +25,9 @@ function sys_php_version_valid($version = '5.6')
  */
 function sys_dump($var, $isExit = false)
 {
-    if ($var && !is_string($var)) {
-        echo '<pre style="padding: 10px; background-color: #f2f2f2; border: 1px solid #ddd; border-radius: 5px;">';
+    $preStyle = 'padding: 10px; background-color: #f2f2f2; border: 1px solid #ddd; border-radius: 5px;';
+    if ($var && !is_bool($var) && !is_string($var)) {
+        echo '<pre style="' . $preStyle . '">';
         if (is_array($var)) {
             print_r($var);
             echo '</pre>';
@@ -35,6 +36,7 @@ function sys_dump($var, $isExit = false)
             echo '</pre>';
         }
     } else {
+        echo '<pre style="' . $preStyle . '">';
         var_dump($var);
     }
     if ($isExit) {
@@ -475,4 +477,32 @@ function dz_authcode($string, $operation = 'DECODE', $key = '', $expiry = 0)
         // 因为加密后的密文可能是一些特殊字符，复制过程可能会丢失，所以用base64编码
         return $keyc.str_replace('=', '', base64_encode($result));
     }
+}
+
+/**
+ * 遍历目录
+ * @param  string $dir  待遍历的目录地址
+ * @param  array  &$res 目录下的文件或子目录，名称以数组键的形式
+ * @return 目录树
+ */
+function sys_dirs($dir, &$res = [])
+{
+    $excludeList = ['.', '..', '.DS_Store', '.git', '.gitignore', '.svn'];
+    if (file_exists($dir)) {
+        if ($dh = opendir($dir)) {
+            while (($file = readdir($dh)) !== false) {
+                if (in_array($file, $excludeList)) {
+                    continue;
+                }
+                if (is_file(realpath($dir) . '/' .$file)) {
+                    $res[$file] = null;
+                } else {
+                    $res[$file] = sys_dirs(realpath($file), $res);
+                }
+            }
+            closedir($dh);
+        }
+    }
+    ksort($res);
+    return $res;
 }

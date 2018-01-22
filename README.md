@@ -22,6 +22,7 @@
 | sys_encrypt | 字符串加密 |
 | sys_decrypt | 字符串解密 |
 | sys_uuid | 生成 uuid（简易版） |
+| sys_dirs | 递归遍历指定目录的文件和子目录 |
 
 - 待添加
 
