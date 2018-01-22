@@ -8,30 +8,43 @@
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * 调式函数
- * @param  mixed  $param 要打印输出的数据
- * @param  string  $type  类型：array | json
- * @param  boolean $zh    当类型是 json 时，是否不编码中文
+ * 检查 PHP 版本号
+ * @param  string $version 版本号，如：5.6 或 5.6.31
+ * @return boolean true|false
+ */
+function sys_php_version_valid($version = '5.6')
+{
+    return !version_compare(PHP_VERSION, $version, '<');
+}
+
+/**
+ * 基本变量调整函数
+ * @param  mixed  $var    待打印输出的变量，支持字符串、数组、对象
+ * @param  boolean $isExit 打印之后，是否终止程序继续运行
  * @return
  */
-function sys_dump($param, $type = null, $zh = false)
+function sys_dump($var, $isExit = false)
 {
-    if ($type) {
-        if ($type == 'array') { // 数组原样输出
-            echo '<pre>';
-            print_r($param);
+    if ($var && !is_string($var)) {
+        echo '<pre style="padding: 10px; background-color: #f2f2f2; border: 1px solid #ddd; border-radius: 5px;">';
+        if (is_array($var)) {
+            print_r($var);
             echo '</pre>';
-        } elseif ($type == 'json') { // json 字符串
-            sys_out_json($param, $zh);
+        } else if (is_object($var)) {
+            echo (new \Reflectionclass($var));
+            echo '</pre>';
         }
     } else {
-        var_dump($param);
+        var_dump($var);
+    }
+    if ($isExit) {
+        exit();
     }
 }
 
 /**
  * 向文件写入内容，通过 lock 防止多个进程同时操作
- * @param  string $file     文件地址
+ * @param  string $file     文件完整地址（路径+文件名）
  * @param  string $contents 要写入的内容
  * @return 写入结果 true|false
  */
@@ -44,10 +57,10 @@ function sys_write_file($file, $contents)
             flock($fp, LOCK_UN);
             return true;
         } else {
-            echo 'File is locking...';
+            throw new \Exception('File is locking...');
         }
     } else {
-        echo 'Invalid file or contents!';
+        throw new \Exception('Invalid file or contents!');
     }
     return false;
 }
@@ -75,7 +88,8 @@ function sys_download_file($path, $name = null, $isRemote = false, $proxy = '')
         if (!empty($file['extension'])) {
             $savedFileName = $file['basename'];
         } else {
-            echo 'Extension get failed, parameter \'name\' is required!';
+            $errMsg = 'Extension get failed, parameter \'name\' is required!';
+            throw new \Exception($errMsg);
             return false;
         }
     }
@@ -114,7 +128,7 @@ function sys_download_file($path, $name = null, $isRemote = false, $proxy = '')
         }
         return true;
     } else {
-        echo 'Invalid file: ' . $fileRelativePath;
+        throw new \Exception('Invalid file: ' . $fileRelativePath);
         return false;
     }
 }
@@ -167,7 +181,7 @@ function sys_substr($str, $length, $start = 0, $showEllipsis = false)
  */
 function sys_json_encode($arr)
 {
-    if (PHP_VERSION >= 5.4) {
+    if (sys_php_version_valid('5.4')) {
         return json_encode($arr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     } else {
         // $encodedStr = urldecode(json_encode($this->_url_encode($str)));
@@ -179,29 +193,14 @@ function sys_json_encode($arr)
 }
 
 /**
- * 输出数据 json 编码后的字符串
- * @param  array  $arr  要编码并输出的数据，一般是数组
- * @param  boolean $zhNo 是否编码中文
- * @return
- */
-function sys_out_json($arr, $zhNo = false)
-{
-    if ($zhNo) {
-        echo sys_json_encode($arr);
-    } else {
-        echo json_encode($arr);
-    }
-    exit;
-}
-
-/**
- * 生成唯一 ID（简易版）
+ * 生成 uuid（简易版）
+ * 格式：XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
  * @return
  */
 function sys_uuid($type = null)
 {
     $uuid = md5(uniqid(rand(), true));
-    if ($type && $type == 1) { // 格式：XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+    if ($type && $type == 1) {
         $str = strtoupper($uuid);
         $uuid = substr($str, 0, 8) . '-' .
                 substr($str, 8, 4) . '-' .
@@ -238,7 +237,7 @@ function sys_client_ip()
 }
 
 /**
- * 获取 IP 的位置信息：国家、地区、isp
+ * 根据 IP 获取对应的地理位置信息：国家、地区、isp
  * @param  string $ip 待查询的 ip 地址
  * @return
  */
@@ -288,14 +287,13 @@ function sys_ip_location($ip)
  *
  * @uses
  *
-    $params['method'] = 'GET';
-    $params['options'] = [
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/x-www-form-urlencoded;charset=utf-8',
-        ]
-    ];
-    $result = sys_curl($url, $params);
- *
+ *  $params['method'] = 'GET';
+ *  $params['options'] = [
+ *      CURLOPT_HTTPHEADER => [
+ *          'Content-Type: application/x-www-form-urlencoded;charset=utf-8',
+ *      ]
+ *  ];
+ *  $result = sys_curl($url, $params);
  *
  * @return
  */
@@ -332,28 +330,33 @@ function sys_curl($url, $params = [])
 }
 
 /**
- * 将数据导出到 CSV 文件
+ * 将数据写入 CSV 文件并直接通过浏览器下载
  * @param  array $rows     要导出的数据
- * @param  string $filename 指定的 csv 文件名
+ *     格式：[['Jerry', 12, '18812341234'], ['Tom', 18, '16612341234'], ...]
+ * @param  string $filename 指定 csv 文件名，不加扩展名
  * @return
  */
 function sys_export_csv($rows, $filename = null)
 {
-   if ((!empty($rows))) {
+   if ((!empty($rows)) && is_array($rows)) {
 
-      $name = ($filename) ? $filename . ".csv" : "export.csv";
-      header('Content-Type: text/csv; charset=utf-8');
-      header('Content-Disposition: attachment; filename=' . $name);
+        // 指定下载文件格式
+        $name = ($filename) ? $filename . ".csv" : "export.csv";
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $name);
 
-      # Start the ouput
-      $fp = fopen('php://output', 'w');
-      fputs($fp, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF))); // add BOM to fix UTF-8 in Excel
-      foreach ($rows as $row) {
-         fputcsv($fp, $row);
-      }
-      return true;
-      // exit();
+        // 写入文件
+        $fp = fopen('php://output', 'w');
+        fputs($fp, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF))); // add BOM to fix UTF-8 in Excel
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                $row = ['Invalid data, array is required.'];
+            }
+            fputcsv($fp, $row);
+        }
+        return true;
    }
+   throw new \Exception('Invalid parameter type, array is required.');
    return false;
 }
 
