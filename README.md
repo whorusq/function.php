@@ -1,6 +1,7 @@
-# function.php
+常用 PHP 工具函数整理
+---
 
-> 常用 PHP 工具函数整理
+### 1. 函数列表
 
 - [x] sys_dump() 调试输出
 - [x] sys_write_file() 向文件写入内容，通过 lock 防止多个进程同时操作
@@ -19,4 +20,13 @@
 - [x] sys_encrypt() 字符串加密
 - [x] sys_decrypt() 字符串解密
 - [x] sys_uuid() 生成唯一 ID
-- [ ] ……
+- [ ] 其它待添加...
+
+### 2. 函数使用示例
+
+
+
+
+
+
+
