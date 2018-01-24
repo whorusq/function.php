@@ -403,11 +403,12 @@ function sys_encrypt($str, $key = '', $expiry = 0)
 /**
  * 解密
  * @param  string $str 密文串儿
+ * @param  string $key 密钥串
  * @return
  */
-function sys_decrypt($str)
+function sys_decrypt($str, $key = '')
 {
-    return dz_authcode($str, 'DECODE');
+    return dz_authcode($str, 'DECODE', $key);
 }
 
 /**
@@ -505,4 +506,31 @@ function sys_dirs($dir, &$res = [])
     }
     ksort($res);
     return $res;
+}
+
+/**
+ * 加密、验证用户密码
+ * @param  string $input  用户输入的密码串
+ * @param  string $hashed 经过加密的密码 hash 值
+ * @param  string $salt 密钥串，用于低版本 PHP 加密、解密时，不传则使用默认值
+ * @return boolean|tring
+ *         - 只传 $input，返回字符串的 hash 值（数据库存储长度推荐 256）；失败，返回 false
+ *         - 传 $input 和 $hashed，检查密码是否正确，返回 true 或 false
+ */
+function sys_pwd($input, $hashed = null, $salt = 'password')
+{
+    if (!sys_php_version_valid('5.5')) {
+        if (!$hashed) {
+            return password_hash($input, PASSWORD_DEFAULT);
+        } else {
+            return password_verify($input, $hashed);
+        }
+    } else { // 不支持密码哈希的低版本 PHP 使用加密、解密函数处理
+        if (!$hashed) {
+            return sys_encrypt($input, $salt) ?: false;
+        } else {
+            $originStr = sys_decrypt($hashed, $salt);
+            return $input === $originStr ? true : false;
+        }
+    }
 }

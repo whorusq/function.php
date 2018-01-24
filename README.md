@@ -23,13 +23,14 @@
 | sys_decrypt | 字符串解密 |
 | sys_uuid | 生成 uuid（简易版） |
 | sys_dirs | 递归遍历指定目录的文件和子目录 |
+| sys_pwd | 生成密码哈希值或检查密码是否与存储的 hash 值一致 |
 
 - 待添加
 
 | 函数名称 | 描述 |
 | --- | --- |
-| sys_num2rmb | 数值转人民币 |
-| sys_verify_idcard | 验证身份证号，获取身份证信息 |
+| sys_amount_in_words | 人民币金额大写 |
+| sys_idcard | 验证身份证号，获取身份证信息 |
 | sys_destroy | 自毁😆 |
 | ... | 其它 |
 
