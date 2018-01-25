@@ -522,13 +522,13 @@ function sys_dirs($dir, &$res = [])
  */
 function sys_pwd($input, $hashed = null, $salt = 'password')
 {
-    if (!sys_php_version_valid('5.5')) {
+    if (function_exists('password_hash')) {
         if (!$hashed) {
             return password_hash($input, PASSWORD_DEFAULT);
         } else {
             return password_verify($input, $hashed);
         }
-    } else { // 不支持密码哈希的低版本 PHP 使用加密、解密函数处理
+    } else { // 低版本 hash 处理， PHP < 5.5
         if (!$hashed) {
             return sys_encrypt(crypt($input), $salt) ?: false;
         } else {
@@ -553,3 +553,101 @@ function sys_pwd($input, $hashed = null, $salt = 'password')
         }
     }
 }
+
+/**
+ * 身份证号码验证，支持 18 位、15 位
+ *
+ * @uses
+ *
+ *      $idInfo = sys_idcard('xxxxxxxxx');
+ *      if ($idInfo !== false) {
+ *          var_dump($idInfo);
+ *      } else {
+ *          sys_dump('无效的身份证号码!');
+ *      }
+ *
+ * @param  string $id 待验证的身份证号码
+ * @return array|boolean
+ *         - false 无效的身份证号码
+ *         - [] 有效身份证号码所包含的信息
+ *             - birthday 生日
+ *             - area 所属省、直辖市、自治区
+ *             - sex 性别
+ */
+function sys_idcard($id)
+{
+    $idcardInfo = [];
+
+    // 验证长度
+    $len = strlen($id);
+    if ($len != 15 && $len != 18) {
+        return false;
+    }
+
+    // 验证所属区域
+    $allArea = array(
+        11 => "北京",  12 => "天津", 13 => "河北",   14 => "山西", 15 => "内蒙古", 21 => "辽宁",
+        22 => "吉林",  23 => "黑龙江", 31 => "上海",  32 => "江苏",  33 => "浙江", 34 => "安徽",
+        35 => "福建",  36 => "江西", 37 => "山东", 41 => "河南", 42 => "湖北",  43 => "湖南",
+        44 => "广东", 45 => "广西",  46 => "海南", 50 => "重庆", 51 => "四川", 52 => "贵州",
+        53 => "云南", 54 => "西藏", 61 => "陕西", 62 => "甘肃", 63 => "青海", 64 => "宁夏",
+        65 => "新疆", 71 => "台湾", 81 => "香港", 82 => "澳门", 91 => "国外"
+    );
+    $idcardInfo['province'] = $allArea[substr($id, 0, 2)];
+    if (!$idcardInfo['province']) {
+        return false;
+    }
+
+    // 验证出生日期
+    $isValidBirthdayDate = function($birthday) {
+        $birthday = strlen($birthday) == 6 ? intval('19' . $birthday) : intval($birthday);
+        $year = substr($birthday, 0, 4);
+        $currYear = intval(date('Y'));
+        if ($year < ($currYear - 110) || $year > $currYear) {
+            return false; // 出生年份大于今年或小于110岁，都是无效的
+        }
+        return $birthday == date('Ymd', strtotime($birthday)) ?: false;
+    };
+    $birthday = $len == 18 ? substr($id, 6, 8) : substr($id, 6, 6);
+    if ($isValidBirthdayDate($birthday)) {
+        $idcardInfo['birthday'] = date('Y年m月d日', strtotime($birthday));
+    } else {
+        return false;
+    }
+
+    // 根据身份证号长度采用不同规则进行校验
+    if ($len == 18) {
+
+        // 验证身份证校验码，根据国家标准GB 11643-1999
+        // $factor 加权因子
+        // $verifyCodeList 校验码对应值
+        $isValidVirifyCode = function($id) {
+            $factor = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+            $verifyCodeList = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+            $id17 = substr($id, 0, 17);
+            $sum = 0;
+            $len = strlen($id17);
+            for ($i = 0; $i < $len; $i++) {
+                $sum += $id17[$i] * $factor[$i];
+            }
+            $mode = $sum % 11;
+            return $verifyCodeList[$mode] == strtoupper(substr($id, 17, 1)) ?: false;
+        };
+        if (!$isValidVirifyCode($id)) {
+            return false;
+        }
+
+    } else if ($len == 15) {
+
+    }
+
+    // 获取性别信息
+    // 18 位身份证是滴 17 位；15 位身份证是滴 15 位
+    $sexId = $len == 18 ? substr($id, 16, 1) : substr($id, 14, 1);
+    $idcardInfo['sex'] = $sexId % 2 == 0 ? '女' : '男';
+
+    // 合法身份证号码，返回身所包含的具体信息
+    return $idcardInfo;
+}
+
+

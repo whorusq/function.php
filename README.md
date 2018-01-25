@@ -24,6 +24,7 @@
 | sys_uuid | 生成 uuid（简易版） |
 | sys_dirs | 递归遍历指定目录的文件和子目录 |
 | sys_pwd | 生成密码哈希值或检查密码是否与存储的 hash 值一致 |
+| sys_idcard | 验证身份证号码 |
 
 - 待添加
 
