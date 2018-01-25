@@ -26,7 +26,7 @@ function sys_php_version_valid($version = '5.6')
 function sys_dump($var, $isExit = false)
 {
     $preStyle = 'padding: 10px; background-color: #f2f2f2; border: 1px solid #ddd; border-radius: 5px;';
-    if ($var && !is_bool($var) && !is_string($var)) {
+    if ($var && (is_array($var) || is_object($var))) {
         echo '<pre style="' . $preStyle . '">';
         if (is_array($var)) {
             print_r($var);
@@ -510,11 +510,14 @@ function sys_dirs($dir, &$res = [])
 
 /**
  * 加密、验证用户密码
+ *
+ * 提示：生成的加密串，推荐数据库存储长度 256
+ *
  * @param  string $input  用户输入的密码串
  * @param  string $hashed 经过加密的密码 hash 值
  * @param  string $salt 密钥串，用于低版本 PHP 加密、解密时，不传则使用默认值
  * @return boolean|tring
- *         - 只传 $input，返回字符串的 hash 值（数据库存储长度推荐 256）；失败，返回 false
+ *         - 只传 $input，返回字符串的 hash 值；失败，返回 false
  *         - 传 $input 和 $hashed，检查密码是否正确，返回 true 或 false
  */
 function sys_pwd($input, $hashed = null, $salt = 'password')
@@ -527,10 +530,26 @@ function sys_pwd($input, $hashed = null, $salt = 'password')
         }
     } else { // 不支持密码哈希的低版本 PHP 使用加密、解密函数处理
         if (!$hashed) {
-            return sys_encrypt($input, $salt) ?: false;
+            return sys_encrypt(crypt($input), $salt) ?: false;
         } else {
             $originStr = sys_decrypt($hashed, $salt);
-            return $input === $originStr ? true : false;
+            if (!function_exists('hash_equals')) { // 低版本 hash_equals 兼容
+                $checkHash = function() use($input, $originStr) {
+                    if (strlen($str1) != strlen($str2)) {
+                        return false;
+                    } else {
+                        $res = $str1 ^ $str2;
+                        $ret = 0;
+                        for ($i = strlen($res) - 1; $i >= 0; $i--) {
+                            $ret |= ord($res[$i]);
+                        }
+                        return !$ret;
+                    }
+                };
+                return $checkHash();
+            } else {
+                return hash_equals($originStr, crypt($input, $originStr));
+            }
         }
     }
 }
