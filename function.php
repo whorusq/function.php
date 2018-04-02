@@ -1,24 +1,15 @@
 <?php
-////////////////////////////////////////////////////////////////////////////////////////////
-/**
- * 常用函数库
- * @author: whoru.S.Q <whorusq@gmail.com>
- * @create: 2017-01-05 09:15:43
- */
-////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * 检查 PHP 版本号
- * @param  string $version 版本号，如：5.6 或 5.6.31
- * @return boolean true|false
- */
-function sys_php_version_valid($version = '5.6')
-{
-    return !version_compare(PHP_VERSION, $version, '<');
-}
+//----------------------------------------------------------------------
+// PHP 常用函数库
+// Author： whoru.S.Q <whoru@sqiang.net>
+// Link: http://sqiang.net
+// Create: 2017-01-05 09:15:43
+//----------------------------------------------------------------------
 
 /**
  * 基本变量调整函数
+ *
  * @param  mixed  $var    待打印输出的变量，支持字符串、数组、对象
  * @param  boolean $isExit 打印之后，是否终止程序继续运行
  * @return
@@ -38,6 +29,7 @@ function sys_dump($var, $isExit = false)
     } else {
         echo '<pre style="' . $preStyle . '">';
         var_dump($var);
+        echo '</pre>';
     }
     if ($isExit) {
         exit();
@@ -46,6 +38,7 @@ function sys_dump($var, $isExit = false)
 
 /**
  * 向文件写入内容，通过 lock 防止多个进程同时操作
+ *
  * @param  string $file     文件完整地址（路径+文件名）
  * @param  string $contents 要写入的内容
  * @return 写入结果 true|false
@@ -59,20 +52,16 @@ function sys_write_file($file, $contents)
             flock($fp, LOCK_UN);
             return true;
         } else {
-            throw new \Exception('File is locking...');
+            return false;
         }
     } else {
-        throw new \Exception('Invalid file or contents!');
+        throw new \Exception('Invalid file or invalid written contents!');
     }
     return false;
 }
 
 /**
- * 文件直接下载
- * @uses
- *
- *      sys_download_file('web服务器中的文件地址', 'test.jpg');
- *      sys_download_file('远程文件地址', 'test.jpg', true);
+ * 通过浏览器直接下载文件
  *
  * @param  string  $path     文件地址：针对当前服务器环境的相对或绝对地址
  * @param  string  $name     下载后的文件名（包含扩展名）
@@ -137,6 +126,7 @@ function sys_download_file($path, $name = null, $isRemote = false, $proxy = '')
 
 /**
  * 创建多级目录
+ *
  * @param  string  $path 目录路径
  * @param  integer $mod  目录权限（windows忽略）
  * @return  创建结果 true|false
@@ -151,6 +141,7 @@ function sys_mkdir($path, $mod = 0777)
 
 /**
  * 基于 UTF-8 的字符串截取
+ *
  * @param  string  $str          待截取的字符串
  * @param  integer  $length       截取长度
  * @param  interger $start         开始下标
@@ -178,15 +169,15 @@ function sys_substr($str, $length, $start = 0, $showEllipsis = false)
 
 /**
  * 兼容性的 json_encode，不编码汉字
+ *
  * @param  array $arr 待编码的信息
- * @return
+ * @return 编码后的 json 字符串
  */
 function sys_json_encode($arr)
 {
-    if (sys_php_version_valid('5.4')) {
+    if (version_compare(PHP_VERSION, '5.4', '>')) {
         return json_encode($arr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     } else {
-        // $encodedStr = urldecode(json_encode($this->_url_encode($str)));
         foreach ($arr as $key => $value) {
             $arr[$key] = urlencode($value);
         }
@@ -196,8 +187,9 @@ function sys_json_encode($arr)
 
 /**
  * 生成 uuid（简易版）
- * 格式：XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
- * @return
+ *
+ * @param integer $type 取值 1，格式：XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ * @return 一个 32 位的字符串 或 带格式的 36 位字符串
  */
 function sys_uuid($type = null)
 {
@@ -215,7 +207,7 @@ function sys_uuid($type = null)
 
 /**
  * 获取客户端 IP 地址
- * @return
+ * @return IP 地址
  */
 function sys_client_ip()
 {
@@ -240,8 +232,13 @@ function sys_client_ip()
 
 /**
  * 根据 IP 获取对应的地理位置信息：国家、地区、isp
+ *
  * @param  string $ip 待查询的 ip 地址
- * @return
+ * @return arr IP 对应的信息
+ *      - country 国家
+ *      - location 地区
+ *      - isp 运营商
+ *      - ip 对应的 IP
  */
 function sys_ip_location($ip)
 {
@@ -283,21 +280,10 @@ function sys_ip_location($ip)
  *
  * @param  string $url     待请求的接口地址
  * @param  array  $params  请求参数
- *   - method 请求方式，默认 POST
- *   - data 请求接口时候，一同提交的参数
- *   - options 其它 curl 可选参数
- *
- * @uses
- *
- *  $params['method'] = 'GET';
- *  $params['options'] = [
- *      CURLOPT_HTTPHEADER => [
- *          'Content-Type: application/x-www-form-urlencoded;charset=utf-8',
- *      ]
- *  ];
- *  $result = sys_curl($url, $params);
- *
- * @return
+ *      - method 请求方式，默认 POST
+ *      - data 请求接口时候，一同提交的参数
+ *      - options 其它 curl 可选参数
+ * @return mixde 请求结果
  */
 function sys_curl($url, $params = [])
 {
@@ -333,10 +319,16 @@ function sys_curl($url, $params = [])
 
 /**
  * 将数据写入 CSV 文件并直接通过浏览器下载
- * @param  array $rows     要导出的数据
- *     格式：[['Jerry', 12, '18812341234'], ['Tom', 18, '16612341234'], ...]
- * @param  string $filename 指定 csv 文件名，不加扩展名
- * @return
+ *
+ * @param  array $rows     要导出的数据，格式：
+ *     [
+ *          ['标题1', '标题2', '标题3'],
+ *          ['Jerry', 12, '18812341234'],
+ *          ['Tom', 18, '16612341234'],
+ *          ...
+ *      ]
+ * @param  string $filename 指定 csv 文件名，不带扩展名
+ * @return boolean
  */
 function sys_export_csv($rows, $filename = null)
 {
@@ -363,10 +355,13 @@ function sys_export_csv($rows, $filename = null)
 }
 
 /**
- * 生成随机密码串儿
+ * 生成随机密码串
+ *
  * @param  integer $length 密码位数，默认 8 位
- * @param  integer $type   密码类型：0 默认，字母+数字；1 字母+数字+特殊符号
- * @return
+ * @param  integer $type   密码类型
+ *      - 0 默认，字母 + 数字；
+ *      - 1 字母 + 数字 + 特殊符号
+ * @return string 一个按规则生成的随机密码串
  */
 function sys_random_pwd($length = 8, $type = 0)
 {
@@ -390,10 +385,11 @@ function sys_random_pwd($length = 8, $type = 0)
 
 /**
  * 加密
- * @param  string  $str    待加密的明文串
- * @param  string  $key     密钥串
+ *
+ * @param  string  $str    待加密的字符串
+ * @param  string  $key     自定义密钥串
  * @param  integer $expiry  密文有效期，时间戳，单位：秒
- * @return
+ * @return 加密后的字符串
  */
 function sys_encrypt($str, $key = '', $expiry = 0)
 {
@@ -402,9 +398,10 @@ function sys_encrypt($str, $key = '', $expiry = 0)
 
 /**
  * 解密
- * @param  string $str 密文串儿
- * @param  string $key 密钥串
- * @return
+ *
+ * @param  string $str 待解密的密文字符串
+ * @param  string $key 加密时使用的密钥串
+ * @return 解密后的字符串
  */
 function sys_decrypt($str, $key = '')
 {
@@ -413,9 +410,10 @@ function sys_decrypt($str, $key = '')
 
 /**
  * Discuz! 加密/解密函数
+ *
  * @param  string  $string    明文或密文
  * @param  string  $operation 操作类型：DECODE 解密，不传或其它任意字符表示加密
- * @param  string  $key
+ * @param  string  $key       秘钥串
  * @param  integer $expiry    密文有效期，时间戳，单位：秒
  * @return 密文或明文
  */
@@ -520,7 +518,7 @@ function sys_dirs($dir, &$res = [])
  *         - 只传 $input，返回字符串的 hash 值；失败，返回 false
  *         - 传 $input 和 $hashed，检查密码是否正确，返回 true 或 false
  */
-function sys_pwd($input, $hashed = null, $salt = 'password')
+function sys_password($input, $hashed = null, $salt = 'password')
 {
     if (function_exists('password_hash')) {
         if (!$hashed) {
@@ -556,15 +554,6 @@ function sys_pwd($input, $hashed = null, $salt = 'password')
 
 /**
  * 身份证号码验证，支持 18 位、15 位
- *
- * @uses
- *
- *      $idInfo = sys_idcard('xxxxxxxxx');
- *      if ($idInfo !== false) {
- *          var_dump($idInfo);
- *      } else {
- *          sys_dump('无效的身份证号码!');
- *      }
  *
  * @param  string $id 待验证的身份证号码
  * @return array|boolean
