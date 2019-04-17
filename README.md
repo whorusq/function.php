@@ -24,6 +24,8 @@
 | sys_dirs | 递归遍历指定目录的文件和子目录 |
 | sys_password | 生成密码哈希值或检查密码是否与存储的 hash 值一致 |
 | [sys_idcard](https://github.com/whorusq/function.php#sys_idcard) | 验证身份证号码 |
+| sys_date | 根据时区获取准确的时间，替代原 date 函数 |
+
 
 - 待添加
 

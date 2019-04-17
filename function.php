@@ -639,4 +639,17 @@ function sys_idcard($id)
     return $idcardInfo;
 }
 
+/**
+ * 根据时区获取准确的时间
+ * 说明：原 date 函数会根据当前时区变化；gmdate 永远把时区当作 UTC+0
+ * @param string $format 时间格式
+ * @param integer $timestamp 待处理的时间戳
+ * @param integer $zone 时区，默认：东 8 区
+ * @return string
+ */
+function sys_date($format, $timestamp = 0, $zone = 8)
+{
+    $timestamp = intval($timestamp) > 0 ? intval($timestamp) : time();
+    return gmdate($format, $timestamp + $zone * 3600);
+}
 
